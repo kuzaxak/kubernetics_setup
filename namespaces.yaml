@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: beta
