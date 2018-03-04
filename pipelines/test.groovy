@@ -1,16 +1,15 @@
 podTemplate(
         cloud: 'insly_cluster',
-        label: 'insly_test_podv1',
+        label: 'insly_test_podv2',
         nodeSelector: 'cloud.google.com/gke-preemptible: true',
         slaveConnectTimeout: 500,
         containers: [
                 containerTemplate(name: 'workspace', image: 'kuzaxak/workspace', ttyEnabled: true),
-                containerTemplate(name: 'php-fpm', image: 'kuzaxak/php-fpm', ttyEnabled: true),
                 containerTemplate(name: 'selenium', image: 'selenium/standalone-chrome:3.4.0-einsteinium', ttyEnabled: true),
                 containerTemplate(name: 'fop', image: 'kuzaxak/fop'),
                 containerTemplate(name: 'mailcatcher', image: 'kuzaxak/mailcatcher'),
                 containerTemplate(name: 'phpqa', image: 'kuzaxak/phpqa:v1.16', ttyEnabled: true, command: 'cat'),
-                containerTemplate(name: 'nginx', image: 'kuzaxak/nginx:ci-0.8'),
+                containerTemplate(name: 'nginx-php-fpm', image: 'kuzaxak/php-fpm-nginx:1.0.0'),
                 containerTemplate(name: 'dnsmasq', image: 'kuzaxak/dnsmasq'),
         ],
         volumes: [
@@ -18,16 +17,11 @@ podTemplate(
                 secretVolume(secretName: 'mysql.root', mountPath: '/home/jenkins/mysql'),
                 emptyDirVolume(mountPath: '/var/www', memory: false),
         ],
-        annotations: [
-                podAnnotation(key: "pod.beta.kubernetes.io/init-containers", value: '''[
-                        {
-                            "name": "init-php-fpm",
-                            "image": "busybox",
-                            "command": ["sh", "-c", "until nslookup php-fpm; do echo 'waiting for myservice'; sleep 2; done;"]
-                        }]'''),
+        envVars: [
+            envVar(key: 'INSLY_CONFIG', value: 'config_docker.ini'),
         ]
 ) {
-    node('insly_test_podv1') {
+    node('insly_test_podv2') {
         timestamps {
             stage("checkout") {
                 git branch: "origin/${env.gitlabSourceBranch}",
@@ -62,13 +56,13 @@ podTemplate(
                                 gitlabCommitStatus("analysis") {
                                     container('phpqa') {
                                         sh '''
-                                    ls -la
-                                    ls -la /var/www
-                                    ls -la /var/www/insly3
+                                          ls -la
+                                          ls -la /var/www
+                                          ls -la /var/www/insly3
 
-                                    /composer/vendor/edgedesign/phpqa/phpqa tools
-                                    /composer/vendor/edgedesign/phpqa/phpqa --report offline --analyzedDirs live --ignoredDirs contrib,vendor,build,migrations,test --ignoredFiles _ide_helper.php --tools phpcpd,phploc,pdepend,phpmd,phpmetrics,phpcs,security-checker,phpstan,parallel-lint
-                                    '''
+                                          /composer/vendor/edgedesign/phpqa/phpqa tools
+                                          /composer/vendor/edgedesign/phpqa/phpqa --report offline --analyzedDirs live --ignoredDirs contrib,vendor,build,migrations,test --ignoredFiles _ide_helper.php --tools phpcpd,phploc,pdepend,phpmd,phpmetrics,phpcs,security-checker,phpstan,parallel-lint
+                                        '''
 
                                         archive 'build/*'
                                         publishHTML(target: [
