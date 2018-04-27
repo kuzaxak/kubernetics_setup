@@ -14,7 +14,7 @@ spec:
         cloud.google.com/gke-nodepool: default-pool
       containers:
       - name: master
-        image: jenkins/jenkins:2.99
+        image: eu.gcr.io/insly-testing/jenkins:2.118-0
         ports:
         - containerPort: 8080
         - containerPort: 50000

@@ -10,18 +10,6 @@ spec:
     app: mysql
   clusterIP: None
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pv-claim
-  namespace: jenkins
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 40Gi
----
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -39,22 +27,20 @@ spec:
         app: mysql
     spec:
       containers:
-      - image: mysql:5.7
+      - image: gcr.io/cloudsql-docker/gce-proxy:1.11
         name: mysql
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql.root
-              key: root_password
+        command: ["/cloud_sql_proxy",
+                    "-instances=insly-testing:us-central1:test-ci=tcp:0.0.0.0:3306",
+                    "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: cloudsql-instance-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
         ports:
         - containerPort: 3306
           name: mysql
-        volumeMounts:
-        - name: mysql-persistent-storage
-          mountPath: /var/lib/mysql
-          subPath: mysql
+
       volumes:
-      - name: mysql-persistent-storage
-        persistentVolumeClaim:
-          claimName: mysql-pv-claim
+      - name: cloudsql-instance-credentials
+        secret:
+          secretName: cloudsql-instance-credentials

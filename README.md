@@ -1,3 +1,11 @@
+#Get auth token
+```bash
+kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep admin-user | awk '{print $1}')
+```
+
+kubectl create secret generic google-cloud-sql --from-file=./service.json --namespace=jenkins
+
+
 #Install Jenkins
 
 ```bash
